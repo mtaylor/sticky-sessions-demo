@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sticky-sessions-ingress
+  namespace: sticky-sessions-demo
+  annotations:
+    # Nginx ingress - enable sticky sessions
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: sticky-sessions.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 8080
+  # For environments without a host-based ingress, remove the host or use *
+  # and access via the ingress controller's external IP/hostname

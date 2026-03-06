@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    kubernetes:
+      discovery:
+        enabled: true
+        all-namespaces: false
+    gateway:
+      routes:
+        - id: backend-service
+          uri: lb://backend-service
+          predicates:
+            - Path=/**
+    loadbalancer:
+      configurations: request-based-sticky-session
+      sticky-session:
+        add-service-instance-cookie: true
+        instance-id-cookie-name: sc-lb-instance-id
+
+logging:
+  level:
+    org.springframework.cloud.loadbalancer: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

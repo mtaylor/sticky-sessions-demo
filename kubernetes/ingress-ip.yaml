@@ -1,0 +1,24 @@
+# Alternative ingress without host - use when accessing via IP (e.g. minikube ip, node port)
+# Access via http://<ingress-ip>/ or http://<minikube-ip>:<nodeport>/
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sticky-sessions-ingress-ip
+  namespace: sticky-sessions-demo
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/affinity-mode: "persistent"
+    nginx.ingress.kubernetes.io/session-cookie-name: "route"
+    nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 8080

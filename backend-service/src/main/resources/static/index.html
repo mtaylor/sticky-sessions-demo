@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Sessions Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #e8e8e8;
+        }
+        h1 {
+            color: #00d9ff;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle {
+            color: #8892b0;
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        button {
+            background: linear-gradient(135deg, #00d9ff 0%, #0099cc 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 217, 255, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        th {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+        tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .instance-id {
+            font-family: 'Monaco', 'Consolas', monospace;
+            color: #7ee787;
+            font-weight: 500;
+        }
+        .timestamp {
+            color: #8892b0;
+            font-size: 0.9rem;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .status.success {
+            background: rgba(126, 231, 135, 0.2);
+            color: #7ee787;
+        }
+        .status.error {
+            background: rgba(248, 81, 73, 0.2);
+            color: #f85149;
+        }
+        .info-box {
+            background: rgba(0, 217, 255, 0.1);
+            border-left: 4px solid #00d9ff;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sticky Sessions Demo</h1>
+    <p class="subtitle">Spring Cloud Gateway + Load Balancer + Kubernetes</p>
+
+    <div class="info-box">
+        Click "Fetch Instance ID" to call the backend through the gateway. With sticky sessions enabled,
+        requests from the same browser session should consistently hit the same backend pod. Refresh the page
+        or open in a new tab to potentially get a different instance.
+    </div>
+
+    <div class="card">
+        <button id="fetchBtn">Fetch Instance ID</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Instance ID</th>
+                    <th>Timestamp</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="results">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const resultsBody = document.getElementById('results');
+        const fetchBtn = document.getElementById('fetchBtn');
+        let requestCount = 0;
+
+        async function fetchInstanceId() {
+            requestCount++;
+            const rowNum = requestCount;
+            fetchBtn.disabled = true;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${rowNum}</td>
+                <td class="instance-id">...</td>
+                <td class="timestamp">${new Date().toLocaleTimeString()}</td>
+                <td><span class="status">Loading</span></td>
+            `;
+            resultsBody.insertBefore(row, resultsBody.firstChild);
+
+            try {
+                const baseUrl = window.location.origin;
+                const response = await fetch(baseUrl + '/api/instance-id', { credentials: 'include' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    row.querySelector('.instance-id').textContent = data.instanceId || data.instance_id || 'N/A';
+                    row.querySelector('.status').textContent = 'OK';
+                    row.querySelector('.status').className = 'status success';
+                } else {
+                    throw new Error(data.message || 'Request failed');
+                }
+            } catch (err) {
+                row.querySelector('.instance-id').textContent = '-';
+                row.querySelector('.status').textContent = 'Error: ' + err.message;
+                row.querySelector('.status').className = 'status error';
+            }
+
+            fetchBtn.disabled = false;
+        }
+
+        fetchBtn.addEventListener('click', fetchInstanceId);
+    </script>
+</body>
+</html>
